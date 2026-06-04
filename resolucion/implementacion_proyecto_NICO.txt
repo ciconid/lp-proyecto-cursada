@@ -1,0 +1,69 @@
+%%%-------------------Creacion de CRs------------------------------------------
+%%% Carga CR de la clase A
+        SetLabel CRA, Libre
+        SetD CRA, 10        @CRA
+        SetLibre Libre + 1
+%%%-----------------------------------------------------------------------------
+
+%%%--------------------Creacion de VTs------------------------------------------
+%%% Carga la VT de la clase A
+
+        SetLabel VTA, Libre
+        SetD Libre, calcularA           @VTA
+        SetD Libre + 1, obtenerEstadoA
+        SetLibre Libre + 2
+
+%%% Carga la VT de la clase B        
+
+%%% Carga la VT de la clase C
+        SetLabel VTC, libre
+        SetD libre, calcularA           @VTC
+        SetD libre+1, obtenerEstadoC
+        SetD libre+2, procesarComplejoC
+        SetD libre+3, VTA
+        SetLibre libre+4
+%%%-----------------------------------------------------------------------------
+
+%%%--------------------Codigo de Inicializacion (llamada a main)----------------
+%%% Llama a main y finaliza
+        SetD Libre, pc+5        @PTR - RA main
+        SetD Libre+1, actual    @ED
+        SetActual Libre
+        SetLibre actual+5
+        Jump main
+        Halt
+
+
+
+
+
+
+%%%--------------------Traduccion de main de la clase Principal------------------
+main    SetIn actual+2              @input1
+        SetIn actual+3              @input2
+
+        SetD actual+4, PO           @objetoC = new C(input1, input2)
+        SetH PO, VTC                @VTC
+        SetH po+1, D[actual+2]      @valorBase      %% PLACEHOLDER, PONER VALOR REAL
+        SetH po+2, D[actual+3]      @objetoB        %% PLACEHOLDER, PONER VALOR REAL
+        SetPO PO+3
+        
+
+
+%%%-----------------------------------------------------------------------------
+
+%%%--------------------Traduccion de calcularA----------------------------------
+calcularA   SetOut actual   
+%%%-----------------------------------------------------------------------------
+
+%%%--------------------Traduccion de obtenerEstadoA-----------------------------
+obtenerEstadoA  SetOut actual
+%%%-----------------------------------------------------------------------------
+
+%%%--------------------Traduccion de obtenerEstadoC-----------------------------
+obtenerEstadoC  SetOut actual
+%%%-----------------------------------------------------------------------------
+
+%%%--------------------Traduccion de procesarComplejoC--------------------------
+procesarComplejoC   SetOut actual
+%%%-----------------------------------------------------------------------------

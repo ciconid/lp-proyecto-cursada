@@ -1,0 +1,3 @@
+Gracias a Nicolas Vera (ex-alumno de lenguajes) por proveer este plugin de Visual Studio Code para resaltar la sintaxis de SimplOn.
+
+https://marketplace.visualstudio.com/items?itemName=nicoverali.simplon-syntax-highlight

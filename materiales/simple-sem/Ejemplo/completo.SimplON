@@ -1,0 +1,87 @@
+%%%%% Traduccion de Base.java y A.java
+
+%%%--------------------Creacion de VTs------------------------------------------ 
+%%% Carga la VT de la clase A
+        SetLabel VTA, Libre                                     %Creo la etiqueta para la VT de A
+        SetD Libre, met1A         @VTA: direccion de met1A      %Pongo en la VTA la direccion la version de met1 que usa A (respetando el offset de met1!)
+        SetD Libre+1, met2A       @VTA: direccion de met2A      %Pongo en la VTA la direccion la version de met2 que usa A (respetando el offset de met1!)
+        SetLibre Libre+3                                        %Actualizo Libre segun el tamaño de la VTA
+        SetActual Libre                                         %Actualizo actual tambien
+
+%%% Carga la VT de la clase Base
+        SetLabel VTBase, Libre                                  %Creo la etiqueta para la VT de Base... No tiene metodos de instancia, pero no es una clase estática!
+        SetLibre Libre+1                                        %Actualizo Libre segun el tamaño de la VTA (Minimo 1!)
+        SetActual Libre                                         %Actualizo actual tambien
+%%%-----------------------------------------------------------------------------
+
+%%%-------------Codigo de Incializacion (Llamada a main)------------------------
+%%% Llama a main y finaliza
+        SetD Libre, pc+5            @PTR    %Guardo puntero de retorno caigo en 21
+        SetD Libre+1, actual        @ED     %Guardo enlace dinamico %main es estatico asi que no tien this!                                    
+        SetActual Libre                     %Muevo actual para que apunte al RA que acabo de crear para main
+        SetLibre Actual+5                   %Muevo libre segun el tamaño del RA de main (considerando las vars locales)
+        Jump Main                           %Salto al codigo de main
+        Halt                                %Cuando termino de ejecutar main finalizo
+
+
+
+%%%--------------------Traduccion de met1 de la clase A-------------------------
+met1A   SetH D[Actual+2]+1, D[Actual+3]     @x=p            %Guardo el valor del parametro p en x  a traves de this en el RA
+        SetH D[Actual+2]+2, D[Actual+3]*5   @y=p*5          %Guardo el valor del parametro p*5 en y  a traves de this en el RA
+        SetLibre Actual                                     %Limpio la memoria del RA de met2
+        SetActual D[Libre+1]                                %Muevo Actual a donde tenia el enlase dinamico
+        Jump D[Libre]                                       %Salto a la direccion de codigo que guarde en el puntero de retorno
+%%%-----------------------------------------------------------------------------
+
+
+%%%--------------------Traduccion de met2 de la clase A-------------------------
+                                                                                    %Uso this del RA para acceder a los valores de x e y.
+met2A   JumpT PC+3, (H[D[Actual+2]+1]+H[D[Actual+2]+2])/2 > 10                      %If ((x+y)/2 > 10). Si es verdadero salto, sino sigo por el else.
+        SetD Actual+3, H[D[Actual+2]+2]*5                       @rtn=y*5            %Cuerpo del Else.
+        Jump PC+2                                                                   %Salto el cuerpo del Then. (Se recomienda usar etiquetas para especificar la dirección del salto)
+        SetD Actual+3, H[D[Actual+2]+1]+2                       @rtn=x+2            %Cuerpo del Then.
+        SetD Actual-1, D[Actual+3]                              @return rtn         %Uso this del RA para acceder a los valores de x e y, y guardo el resultado en espacio reservado para el retorno
+        SetLibre Actual                                                             %Limpio la memoria del RA de met2
+        SetActual D[Libre+1]                                                        %Muevo Actual a donde tenia el enlase dinamico
+        Jump D[Libre]                                                               %Salto a la direccion de codigo que guarde en el puntero de retorno
+%%%-----------------------------------------------------------------------------
+
+
+%%%--------------------Traduccion de main de la clase Base----------------------
+   %% Creamos el Obj de clase A y lo guardamos en v
+main    SetD Actual+2, PO         @v = new A()          %Guardo en v una ref al objeto que creo
+        SetH PO, VTA            @Obj. Clase A - VTA     %Le agrego la VT al nuevo objeto 
+        SetPO PO+3                                      %Incremento el PO segun el tamano de objeto que cree
+
+    %% Leemos por pantalla el valor de i
+        SetIn actual+3              @i=read()           %Leo el valor por pantalla y lo guardo en i
+    
+    %% Traduccion llamada v.met1(i)
+        SetD Libre, PC+7            @PTR                %Guardo el puntero de retorno para volver de met1
+        SetD Libre+1, Actual        @ED                 %Guardo enlace dinamico para al volver apuntar al RA de main
+        SetD Libre+2, D[Actual+2]   @This               %Guardo this que en este caso es el objeto referenciado por v
+        SetD Libre+3, D[Actual+3]   @param p            %Paso por parametro i
+        SetActual Libre                                 %Muevo actual para que apunte al RA que acabo de crear para met1
+        SetLibre  Actual+4                              %Muevo libre segun el tamaño del RA de met1
+        Jump D[H[D[Actual+2]+0]+0]                      %Salto al codigo de met1 segun la VT del objeto receptor (el this del RA que acabo de crear)
+
+    %% Traduccion llamada y asignacion m=v.met2()
+        SetLibre Libre+1            @Lugar Retorno      %Como met2 devuelve algo reservo lugar para ese valor
+        SetD Libre, pc+6            @PTR                %Guardo el puntero de retorno para volver de met2
+        SetD Libre+1, Actual        @ED                 %Guardo enlace dinamico para al volver apuntar al RA de main
+        SetD Libre+2, D[Actual+2]   @This               %Guardo this que en este caso es el objeto referenciado por v
+        SetActual Libre                                 %Muevo actual para que apunte al RA que acabo de crear para met2
+        SetLibre Actual+4                               %Muevo libre segun el tamaño del RA de met2
+        Jump D[H[D[Actual+2]+0]+1]                      %Salto al codigo de met2 segun la VT del objeto receptor (el this del RA que acabo de crear)
+        SetD Actual+4, D[Libre-1]   @m =v.met2()        %Al volver de la llamada tengo en el lugar que reserve para el retorno el valor que guardo en m
+        SetLibre Libre-1                                %Ya use el valor de retorno asi que lo libero
+    
+    %% Traduccion del print(m)
+        SetOut D[Actual+4]                              %Muestro por pantalla el valor de m
+
+    %% Retorno de main
+        SetLibre Actual                                 %Limpio la memoria del RA de main
+        SetActual D[Libre+1]                            %Muevo Actual a donde tenia el enlase dinamico
+        Jump D[Libre]                                   %Salto a la direccion de codigo que guarde en el puntero de retorno
+ 
+%%%-----------------------------------------------------------------------------       

@@ -1,0 +1,132 @@
+SetLabel CRA, Libre
+SetD CRA, 10
+SetLibre Libre + 1
+
+%Construccion VT de A y ref a codigoA
+SetLabel VtA, Libre
+
+SetD Libre, constructorA %REF label
+SetD Libre + 1, calcularA
+SetD Libre + 2, obtenerEnteroA
+%CONSULTA :(SetD Libre + 3, Object?)
+SetLibre Libre + 3
+
+%Construccion VT de B y ref a codigoB
+SetLabel VtB, Libre
+
+SetD Libre, constructorB
+SetD Libre + 1, calcularA
+SetD Libre + 2, obtenerEnteroA
+SetD Libre + 3, procesarSimpleB
+SetD Libre + 4, calcularConForB
+SetD Libre + 5, VtA
+SetLibre Libre + 6
+
+%Construccion VT de C y ref a codigoC
+SetLabel VtC, Libre
+SetD Libre, constructorC
+SetD Libre + 1, calcularA
+SetD Libre + 2, procesarComplejoC
+SetD Libre + 3, obtenerEstadoC
+SetD Libre + 4, VtA
+SetLibre Libre + 5
+
+
+%RA de MAIN
+SetD Libre, PC + 5 %PR main tamaño 5 para cada variable
+SetD Libre + 1, Actual % ED a MAIN
+SetActual Libre
+SetLibre Libre + 7 % tamaño (PR + ED + input1 + input2 + objetoc + res1 + res2)
+Jump main
+Halt
+
+
+main 
+SetIn Actual + 2 %input1
+SetIn Actual + 3 %input2
+SetD Actual + 4, PO % REF a objetoC
+
+SetH PO, VtC
+SetPO PO + 3 %Tamaño de C: ref a VT + atributos valorBase y objetoB
+
+% RA constructor C
+SetD Libre, PC + 8 %PR
+SetD Libre + 1, Actual %ED a RA main
+SetD Libre + 2, D[Actual + 4] % ES, this de C
+SetD Libre + 3, D[Actual + 2] % 1er parametro input1
+SetD Libre + 4, D[Actual + 3] % 2do parametro input2
+
+SetActual Libre
+SetLibre Libre + 5
+
+Jump constructorC
+
+%TODO: ejecutar el resto de main cuando vuelva de crear C
+
+
+
+
+
+
+%-------------------------------------
+% CODIGO DE CADA CLASE A PARTIR DE ACA 
+%-------------------------------------
+
+% codigo completo con labels clase A
+
+constructorA
+jump constructorA
+
+constructorASuperC
+SetH D[Actual + 2] + 1, D[Actual + 3] %heredado this.valorbase = valorbase
+SetLibre Actual %actualizo libre para volver
+SetActual D[Libre + 1] %recupero el ED guardado para volver al RA anterior
+Jump D[Libre] %Salto a lo que apunte el PR
+
+calcularA
+jump constructorA
+obtenerEnteroA
+jump constructorA
+
+%-----------------------------------
+% codigo completo con labels clase B
+constructorB
+jump constructorA
+procesarSimpleB
+jump constructorA
+calcularConForB
+jump constructorA
+
+
+%-----------------------------------
+% codigo completo con labels clase C
+
+constructorC
+
+%creo RA de constructorA por llamada al super
+SetD Libre, PC + 7
+SetD Libre + 1, Actual % ED a constructorC
+
+SetD Libre + 2, D[Actual + 2] % Paso 'this' (c) a A
+SetD Libre + 3, D[Actual + 3] % Parametro valorbase
+
+SetActual Libre
+SetLibre Libre + 4
+jump constructorASuperC %llamada al super
+
+
+%TODO: implementar cuando vuelva del super
+SetH PO, VtB % Se encuentra con constructor B, setea la VtB
+SetPO PO + 3 % objetoB tamaño 3: ref VtB + valorBase(heredado de A) + multiplicador
+
+% Llamada al super (A) dentro de B: se crea el RA
+SetD Libre, PC + 5 %TODO VER LENGTH
+SetD Libre + 1, Actual
+SetD Libre + 2, D[Actual + 2] % Paso 'this'
+
+
+procesarComplejoC
+jump constructorA
+obtenerEstadoC
+jump constructorA
+
