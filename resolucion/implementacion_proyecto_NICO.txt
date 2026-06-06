@@ -1,69 +1,291 @@
 %%%-------------------Creacion de CRs------------------------------------------
 %%% Carga CR de la clase A
         SetLabel CRA, Libre
-        SetD CRA, 10        @CRA
+        SetD CRA, 10        @CRA - factorGlobal
         SetLibre Libre + 1
 %%%-----------------------------------------------------------------------------
 
 %%%--------------------Creacion de VTs------------------------------------------
 %%% Carga la VT de la clase A
-
         SetLabel VTA, Libre
-        SetD Libre, calcularA           @VTA
-        SetD Libre + 1, obtenerEstadoA
-        SetLibre Libre + 2
+        SetD libre, calcularA           @VTA
+        SetD libre+1, obtenerEstadoA
+        SetLibre libre+2
 
 %%% Carga la VT de la clase B        
+        SetLabel VTB, Libre
+        SetD libre, calcularA           @VTB
+        SetD libre+1, obtenerEstadoA
+        SetD libre+2, procesarSimpleB   @procesarSimpleB
+        SetD libre+3, calcularConForB
+        SetD libre+4, VTA               @ref a VTA
+        SetLibre libre+5
 
 %%% Carga la VT de la clase C
         SetLabel VTC, libre
         SetD libre, calcularA           @VTC
         SetD libre+1, obtenerEstadoC
-        SetD libre+2, procesarComplejoC
-        SetD libre+3, VTA
+        SetD libre+2, procesarComplejoC @procesarComplejoC
+        SetD libre+3, VTA               @ref a VTA
         SetLibre libre+4
 %%%-----------------------------------------------------------------------------
 
 %%%--------------------Codigo de Inicializacion (llamada a main)----------------
 %%% Llama a main y finaliza
-        SetD Libre, pc+5        @PTR - RA main
-        SetD Libre+1, actual    @ED
-        SetActual Libre
+        SetActual libre         %crear RA de main
         SetLibre actual+5
         Jump main
-        Halt
-
-
-
-
-
+        
 
 %%%--------------------Traduccion de main de la clase Principal------------------
-main    SetIn actual+2              @input1
-        SetIn actual+3              @input2
+main    SetIn actual+1              @input1
+        SetIn actual+2              @input2
 
-        SetD actual+4, PO           @objetoC = new C(input1, input2)
-        SetH PO, VTC                @VTC
-        SetH po+1, D[actual+2]      @valorBase      %% PLACEHOLDER, PONER VALOR REAL
-        SetH po+2, D[actual+3]      @objetoB        %% PLACEHOLDER, PONER VALOR REAL
-        SetPO PO+3
+        %reservar espacio para referencia a objetoC
+        SetLabel objetoC, libre
+        SetD libre, PO                              @ref a objetoC
+        setlibre libre+1
+        
+        %crear RA de constructorC
+        SetD libre, pc+7                            @PR - RA constructorC
+        SetD libre+1, actual                        @ED
+        SetD libre+2, D[actual+1]                   @valorBase
+        SetD libre+3, D[actual+2]                   @multiplicadorB
+        SetActual libre
+        SetLibre actual+4
+
+        jump constructorC
+        SetD actual+3, D[libre-1]                   @objetoC
+
+        %crear RA de procesarComplejoC 
+        SetD libre, pc+8                            @PR - RA procesarComplejoC
+        SetD libre+1, actual                        @ED
+        SetD libre+2, D[actual+3]                   @this
+        SetD libre+3, D[actual+1] + D[actual+2]     @x
+        SetD libre+4, D[actual+1] - D[actual+2]     @y
+        SetActual libre
+        setlibre actual+5
+
+        jump procesarComplejoC
+
+        %reservar espacio para retorno de obtenerEstadoC
+        SetD libre, 0                               @retorno de obtenerEstadoC
+        setlibre libre+1
+
+        %crear RA de obtenerEstadoC
+        SetD libre, pc+6                            @PR - RA obtenerEstadoC
+        SetD libre+1, actual                        @ED
+        SetD libre+2, D[actual+3]                   @this
+        SetActual libre
+        setlibre actual+3
+
+        jump obtenerEstadoC
+        SetD actual+4, D[libre-1]                   @resultado1
+
+        SetOut D[actual+4]
+
+        halt
         
 
 
 %%%-----------------------------------------------------------------------------
 
+%%%--------------------Traduccion de constructorA-------------------------------
+constructorA    SetH po+1, D[actual+2]       @this.valorBase = valorBase
+
+                jump destruirRAyDevolverControl
+%%%-----------------------------------------------------------------------------
 %%%--------------------Traduccion de calcularA----------------------------------
-calcularA   SetOut actual   
-%%%-----------------------------------------------------------------------------
+calcularA       SetD actual+4, 0        
+                SetD actual+5, 0
 
+                SetLabel whileCalcularA, pc+1
+                    jumpt pc+2, D[actual+5] < D[actual+3]
+                    
+                    %condicion del while evalua a false
+                    jump pc+10 
+
+                    %condicion del while evalua a true                
+                        %if (resultado >= 1000)
+                        jumpt pc+2, D[actual+4] >= 1000
+                        jump pc+2                                               %false
+                        jump pc+7                                               @break
+
+                        %if (i % 2 == 0 || factorGlobal > 50)
+                        %SetOut 11 - ((11 / 2) * 2)                             %ejemplo operacion modulo manual
+                        jumpt pc+3, (D[actual+5] - ((D[actual+5] / 2) * 2)) == 0
+                        jumpt pc+2, D[CRA+0] > 50
+                        jump pc+2                                               %false
+                        SetD actual+4, D[actual+4] + (D[actual+5] * D[CRA+0])
+
+                    
+                    SetD actual+5, D[actual+5] + 1                               @i++
+                    jump whileCalcularA
+                
+                SetD actual-1, D[actual+4]
+
+                jump destruirRAyDevolverControl
+%%%-----------------------------------------------------------------------------
 %%%--------------------Traduccion de obtenerEstadoA-----------------------------
-obtenerEstadoA  SetOut actual
+obtenerEstadoA  SetD actual-1, H[D[actual+2]+1] * D[CRA+0]
+
+                jump destruirRAyDevolverControl
 %%%-----------------------------------------------------------------------------
 
+%%%--------------------Traduccion de constructorB-------------------------------
+constructorB    SetH PO, VTB                        @VTB
+                
+                %crear RA de constructorA
+                SetD libre, pc+6                    @PR - RA constructorA
+                SetD libre+1, actual                @ED
+                SetD libre+2, D[actual+2]           @valorBase
+                SetActual libre
+                setlibre actual+3
+
+                jump constructorA
+
+                %SetH po+1, D[actual+2]             @valorBase
+                
+                SetH po+2, D[actual+3]              @multiplicador
+
+                jump destruirRAyDevolverControl
+
+%%%-----------------------------------------------------------------------------
+%%%--------------------Traduccion de procesarSimpleB----------------------------
+procesarSimpleB     SetD actual+4, H[D[actual+2]+2] + 1                 @base = this.multiplicador + 1
+
+                    jumpt pc+3, D[actual+3] > 0
+                    SetH D[actual+2]+2, D[actual+4] + 1                 @multiplicador = base +1
+                    jump pc+2
+
+                    SetH D[actual+2]+2, D[actual+4] + (D[actual+3] * H[D[actual+2]+2])
+
+
+                    jump destruirRAyDevolverControl
+
+%%%-----------------------------------------------------------------------------
+%%%-------------------Traduccion de calcularConForB-----------------------------
+calcularConForB     jumpt pc+2, D[actual+5] < D[actual+3]
+                    jump pc+4                                                       %j < repeticiones == false
+                    SetD actual+4, D[actual+4] + (D[actual+5] * H[D[actual+2]+2])    
+                    SetD actual+5, D[actual+5] + 1                                  @j++
+                    jump pc-4
+
+                    SetD actual-1, D[actual+4]
+
+                    jump destruirRAyDevolverControl 
+                    
+%%%-----------------------------------------------------------------------------
+
+%%%--------------------Traduccion de constructorC-------------------------------
+constructorC    SetH PO, VTC                    @VTC
+
+                %crear RA de constructorA
+                SetD libre, pc+6                @PR - RA constructorA
+                SetD libre+1, actual            @ED
+                SetD libre+2, D[actual+2]       @valorBase
+                SetActual libre
+                setlibre actual+3
+
+                jump constructorA
+                SetPO po+3
+
+                %reservar espacio para referencia a objetoB
+                SetLabel objetoB, libre
+                SetD libre, PO                  @ref a objetoB
+                setlibre libre+1
+
+                %crear RA de constructorB
+                SetD libre, pc+7                @PR - RA constructorB
+                SetD libre+1, actual            @ED
+                SetD libre+2, D[actual+2]*2     @valorBase
+                SetD libre+3, D[actual+3]       @multiplicador
+                SetActual libre
+                SetLibre actual+4
+
+                jump constructorB
+                SetPO po+3
+                
+                SetH D[actual-1]+2, D[objetoB]  @objetoB
+
+               jump destruirRAyDevolverControl
+
+%%%-----------------------------------------------------------------------------
 %%%--------------------Traduccion de obtenerEstadoC-----------------------------
-obtenerEstadoC  SetOut actual
-%%%-----------------------------------------------------------------------------
+obtenerEstadoC      %reservar espacio para retorno de obtenerEstadoA
+                    SetD libre, 0                       @retorno de obtenerEstadoA
+                    setlibre libre+1
 
+                    %crear RA de obtenerEstadoA
+                    SetD libre, pc+6                    @PR - RA obtenerEstadoA
+                    SetD libre+1, actual                @ED
+                    SetD libre+2, D[actual+2]           @this
+                    SetActual libre
+                    setlibre actual+3
+
+                    jump obtenerEstadoA
+
+                    %reservar espacio para retorno de objetoB.calcularConForB
+                    SetD libre, 0                       @retorno de calcularConForB
+                    setlibre libre+1
+
+                    %crear RA de calcularConForB
+                    SetD libre, pc+9                    @PR - RA calcularConForB
+                    SetD libre+1, actual                @ED
+                    SetD libre+2, H[D[actual+2]+2]      @this
+                    SetD libre+3, 10                    @repeticiones
+                    SetD libre+4, 0                     @total
+                    setd libre+5, 0                     @j
+                    SetActual libre
+                    setlibre actual+6
+
+                    jump calcularConForB
+
+                    SetD actual-1, (D[libre-1] + D[libre-2])
+
+                    jump destruirRAyDevolverControl
+
+%%%-----------------------------------------------------------------------------
 %%%--------------------Traduccion de procesarComplejoC--------------------------
-procesarComplejoC   SetOut actual
+procesarComplejoC   %crear RA de procesarSimpleB
+                    SetD libre, pc+8                    @PR - RA procesarSimpleB
+                    SetD libre+1, actual                @ED
+                    SetD libre+2, H[D[actual+2]+2]      @this
+                    SetD libre+3, D[actual+3]           @x
+                    SetD libre+4, 0                     @base 
+                    SetActual libre
+                    setlibre actual+5
+
+                    jump D[H[D[actual+2]+0]+2]         %llamar a objetoB.procesarSimple
+
+                    jumpt pc+2, D[actual+3] > 0 
+                    jump pc+15                          %no hacer nada si la cond. es falsa
+                    jumpt pc+2, D[actual+4] < 100
+                    jump pc+13                          %no hacer nada si la cond. es falsa
+                    
+
+                    %reservar espacio para retorno de calcularA
+                    SetD libre, 0                       @retorno de calcularA
+                    setlibre libre+1
+
+                    %crear RA de calcularA
+                    SetD libre, pc+9                                    @PR - RA calcularA
+                    SetD libre+1, actual                                @ED
+                    SetD libre+2, D[actual+2]                           @this
+                    SetD libre+3, D[actual+3] + D[actual+4]             @limite
+                    SetD libre+4, 0                                     @resultado
+                    SetD libre+5, 0                                     @i
+                    SetActual libre
+                    setlibre actual+6
+
+                    jump D[D[H[D[actual+2]+0]+3]+0]     %llamar a this.calcularA
+                    
+                    SetH D[actual+2]+1, H[D[actual+2]+1] + D[libre-1]
+
+                    jump destruirRAyDevolverControl
+%%%-----------------------------------------------------------------------------
+%%%------------destruir RA y devolver control a unidad llamadora----------------
+destruirRAyDevolverControl      setlibre actual
+                                SetActual D[actual+1]
+                                jump D[libre]
 %%%-----------------------------------------------------------------------------
