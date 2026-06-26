@@ -1,0 +1,376 @@
+%-------------------------------------
+%CR DE A
+%-------------------------------------
+	SetLabel CRA, Libre         @CR_A
+	SetD CRA, 10                @CR_A
+	SetLibre Libre + 1
+
+
+%-------------------------------------
+%VT DE A
+%-------------------------------------
+	SetLabel VtA, Libre
+	SetD Libre, calcularA               @CalcularA
+	SetD Libre + 1, obtenerEstadoA      @ObtenerEnteroA
+	SetLibre Libre + 2
+
+
+%-------------------------------------
+%VT DE B
+%-------------------------------------
+	SetLabel VtB, Libre
+	SetD Libre, calcularA                   @calcularA
+	SetD Libre + 1, obtenerEstadoA          @obtenerEnteroA
+	SetD Libre + 2, procesarSimpleB         @procesarSimpleB
+	SetD Libre + 3, calcularConForB         @calcularConForB
+	SetD Libre + 4, VtA                     @Ref_VT_A
+	SetLibre Libre + 5
+
+%-------------------------------------
+%VT de C
+%-------------------------------------
+	SetLabel VtC, Libre
+	SetD Libre, calcularA                   @calcularA
+	SetD Libre + 1, obtenerEstadoC          @obtenerEstadoC 
+	SetD Libre + 2, procesarComplejoC       @procesarComplejoC
+	SetD Libre + 3, VtA                     @Ref_VT_A
+	SetLibre Libre + 4
+
+%-------------------------------------
+%RA de MAIN
+%-------------------------------------
+
+%Decision: omitimos PR y ED a main
+	SetActual Libre
+	SetLibre Actual + 5                     %tamaño (args + input1 + input2 + objetoc + res1)
+ 	Jump main
+
+
+
+
+
+%-------------------------------------
+%----------------MAIN-----------------
+%-------------------------------------
+
+main
+	SetIn Actual + 1                        @input1
+	SetIn Actual + 2                        @input2
+	SetD Actual + 3, PO                     @Ref_objC
+
+	SetH PO, VtC                            @Ref_VT_C
+	SetPO PO + 3                            %Tamaño de C: ref a VT + atributos valorBase y ref objetoB
+
+	%-------------------------------------
+	%         RA constructorC
+	%-------------------------------------
+		
+		SetD Libre, D[Actual + 3]           @This_C
+		SetLibre Libre + 1
+		SetD Libre, PC + 7                  @PR a Main
+		SetD Libre + 1, Actual              @ED a Main
+		SetD Libre + 2, D[Actual + 1]       @p_input1
+		SetD Libre + 3, D[Actual + 2]       @p_input2
+	
+		SetActual Libre
+		SetLibre Libre + 4
+	
+		Jump constructorC
+
+	
+	%-------------------------------------
+	%            RA procesarComplejoC
+	%-------------------------------------
+	
+	SetD Libre, PC + 8                                  @PR a main
+	SetD Libre + 1, Actual                              @ED a main
+	SetD Libre + 2, D[Actual + 3]                       @This_C
+	SetD Libre + 3, D[Actual + 1] + D[Actual + 2]       @p_X
+	SetD Libre + 4, D[Actual + 1] - D[Actual + 2]       @p_Y
+	SetActual Libre
+	SetLibre Libre + 5
+	Jump D[H[D[Actual + 2] + 0] + 2]                    %RefC -> VT_C -> procesarComplejoC
+	
+	%-------------------------------------
+	%            RA obtenerEstadoC
+	%-------------------------------------
+	SetLibre Libre + 1                                  %lugar para el retorno
+	SetD Libre, PC + 6                                  @PR a main
+	SetD Libre + 1, Actual                              @ED a main
+	SetD Libre + 2, D[Actual + 3]                       @This_C
+	SetActual Libre
+	SetLibre Libre + 3
+	Jump D[H[D[Actual + 2] + 0] + 1]                    %thisc->vtc->obtenerEstadoC
+
+	
+	SetD Actual + 4, D[Libre - 1]
+	SetOut D[Actual + 4]				    %muestra output resultado1
+	
+	halt					           
+
+
+
+
+%-------------------------------------
+%-------------------------------------
+% CODIGO DE CADA CLASE A PARTIR DE ACA 
+%-------------------------------------
+%-------------------------------------
+
+
+
+%-------------------------------------
+%-------------------------------------
+% CODIGO CLASE A
+%-------------------------------------
+%-------------------------------------
+
+
+%-------------------------------------
+%Constructor
+%-------------------------------------
+
+constructorA
+
+	SetH D[Actual - 1] + 1, D[Actual + 2]               @this.valorbase = valorbase
+	SetLibre Actual                                     %actualizo libre para volver
+	SetActual D[Libre + 1]                              %recupero el ED guardado para volver al RA anterior
+	Jump D[Libre]                                       %Salto a lo que apunte el PR
+
+%-------------------------------------
+%calcularA
+%-------------------------------------
+calcularA
+	JumpT fueraDelWhile, !((D[Actual + 5]) < (D[Actual + 3]))
+		JumpT fueraDelWhile, (D[Actual + 4] >= 1000)
+		
+		JumpT cuerpoDelThen, ((D[Actual + 5] - ((D[Actual + 5] / 2) * 2)) == 0)
+		JumpT incrementarVariableControl, !(D[CRA] > 50)
+
+		cuerpoDelThen
+			SetD Actual + 4, (D[Actual + 4] + (D[Actual + 5] * D[CRA]))             	@resultado+=i*factorGlobal
+
+		incrementarVariableControl
+			SetD Actual + 5, D[Actual + 5] + 1
+		Jump PC - 6
+
+	fueraDelWhile
+		SetD Actual - 1, D[Actual + 4]                                          		@ret resultado
+	
+		SetLibre Actual
+		SetActual D[Libre + 1]
+		Jump D[Libre]
+
+
+%-------------------------------------
+%obtenerEstadoA
+%-------------------------------------
+obtenerEstadoA 
+	SetD Actual - 1, H[D[Actual + 2] + 1] * D[CRA]                          @valorBase*factorGlobal
+	SetLibre Actual
+	SetActual D[Libre + 1]
+	Jump D[Libre]
+
+
+
+%-------------------------------------
+%-------------------------------------
+%CODIGO CLASE B
+%-------------------------------------
+%-------------------------------------
+
+%-------------------------------------
+%Constructor
+%-------------------------------------
+constructorB
+	
+	%-------------------------------------
+	%RA SUPER (constructor A)
+	%-------------------------------------
+	SetD Libre, D[Actual -1]                    @ThisB
+	SetLibre Libre + 1
+	SetD Libre, PC + 6                          @PR a constrB
+	SetD Libre + 1, Actual                      @ED a constrB
+	SetD Libre + 2, D[Actual + 2]               @p_valorbase
+	SetActual Libre
+	SetLibre Libre + 3
+	jump constructorA
+
+	%-------------------------------------
+	%Vuelve del Super(A) en B, ahora -> inicializaMultiplicador
+	%-------------------------------------
+	SetH D[Actual - 1] + 2, D[Actual + 3]           @p_multiplicador
+	SetLibre Actual
+	SetActual D[Libre + 1]
+	Jump D[Libre]
+
+
+%-------------------------------------
+% procesarSimpleB
+%-------------------------------------
+procesarSimpleB
+	JumpT cuerpoElseProcSimpleB, !(D[Actual + 3] > 0)
+	SetH D[Actual + 2] + 2, D[Actual + 4] + (D[Actual + 3] * H[D[Actual + 2] + 2]) @(then)mult= base + x*mult
+	Jump finCondicionalProcSimplB
+
+	cuerpoElseProcSimpleB
+		SetH D[Actual + 2] + 2, D[Actual + 4] + 1 @(else)mult= base + 1
+	
+	finCondicionalProcSimplB
+		%Vuelvo
+		SetLibre Actual
+		SetActual D[Libre + 1]
+		Jump D[Libre]
+	
+
+%-------------------------------------
+%calcularConForB
+%-------------------------------------
+calcularConForB
+
+	SetD Actual + 4, 0                                                                          @total=0
+	SetD Actual + 5, 0									    @j=0
+
+	inicioFor                                                                          
+		JumpT fueraDelFor, !(D[Actual + 5] < D[Actual + 3])
+		SetD Actual + 4, D[Actual + 4] + (D[Actual + 5] * H[D[Actual + 2] + 2]) @total + j*b.mult
+		SetD Actual + 5, D[Actual + 5] + 1
+		Jump inicioFor
+
+	fueraDelFor
+		SetD Actual - 1, D[Actual + 4]
+		SetLibre Actual
+		SetActual D[Libre + 1]
+		Jump D[Libre]
+
+
+%-------------------------------------
+%-------------------------------------
+% CODIGO CLASE C
+%-------------------------------------
+%-------------------------------------
+
+%-------------------------------------
+%constructor
+%-------------------------------------
+constructorC
+
+	%-------------------------------------
+	%RA SUPER (constructor A)
+	%-------------------------------------
+	SetD Libre, D[Actual - 1]                   @This_C
+	SetLibre Libre + 1
+	SetD Libre, PC + 6                          @PR constrC
+	SetD Libre + 1, Actual                      @ED_consC
+	SetD Libre + 2, D[Actual + 2]               @p_valorbase
+	SetActual Libre
+	SetLibre Libre + 3
+	jump constructorA
+
+	%-------------------------------------
+	%Vuelve del Super(A) en C, ahora -> inicializaObjetoB
+	%This_C guardado en Libre - 1 (hasta la ejecucion de código acá)
+	%-------------------------------------
+	SetH D[Actual - 1] + 2, PO          @ref_objB
+	SetH PO, VtB                        @Ref_VtB
+	SetPO PO + 3                        %objetoB tamaño 3: ref VtB + valorBase(heredado de A) + multiplicador
+
+	
+	%-------------------------------------
+	%RA constructorB
+	%-------------------------------------
+		
+	
+	SetD Libre, H[D[Actual - 1] + 2]                    @This_B
+	SetLibre Libre + 1
+	SetD Libre, PC + 7                                  @PR a constrC
+	SetD Libre + 1, Actual                              @ED a constrC
+	SetD Libre + 2, D[Actual + 2] * 2                   @p_valorbase * 2
+	SetD Libre + 3, D[Actual + 3]                       @p_multiplicadorB
+	SetActual Libre
+	SetLibre Libre + 4
+	jump constructorB
+
+	%-------------------------------------
+	%Retorno hacia la unidad llamadora
+	%-------------------------------------
+	SetLibre Actual
+	SetActual D[Libre + 1]
+	Jump D[Libre]
+%-------------------------------------
+%procesarComplejoC
+%-------------------------------------
+procesarComplejoC
+	
+	%-------------------------------------
+	%RA procesarSimpleB
+	%-------------------------------------
+	SetD Libre, PC + 8                              @PR a prCC
+	SetD Libre + 1, Actual                          @ED a prCC
+	SetD Libre + 2, H[D[Actual + 2] + 2]            @This_B
+	SetD Libre + 3, D[Actual + 3]                   @p_X
+	SetD Libre + 4, H[D[Libre + 2] + 2] + 1         @base = b.mult + 1
+	SetActual Libre
+	SetLibre Libre + 5                              %LUGAR DE MAS PARA variable local BASE
+	Jump D[H[D[Actual + 2] + 0] + 2]                %this b -> VtB offset
+
+	JumpT finCondicionalProcComC, !(D[Actual + 3] > 0)
+	JumpT finCondicionalProcComC, !(D[Actual + 4] < 100)
+		%-------------------------------------
+		%RA this.calcular(hereda de A)
+		%-------------------------------------
+		SetLibre Libre + 1                                              %lugar para retornar
+		SetD Libre, PC + 9                                              @PR a pcC
+		SetD Libre + 1, Actual                                          @ED a pcC
+		SetD Libre + 2, D[Actual + 2]                                   @This_C
+		SetD Libre + 3, D[Actual + 3] + D[Actual + 4]                   @p_x + p_y -> p_limite
+		SetD Libre + 4, 0                                               @resultado
+		SetD Libre + 5, 0                                               @i
+		SetActual Libre
+		SetLibre Libre + 6                                              %(PR + ED + thisC + limite + resultado + i)
+		Jump D[H[D[Actual + 2] + 0] + 0]                                %thisC -> vtc ->calcularA
+
+		SetH D[Actual + 2] + 1, H[D[Actual + 2] + 1] + D[Libre - 1]     @valorBase+=this.calcular(x+y)
+	
+	finCondicionalProcComC
+		SetLibre Actual
+		SetActual D[Libre + 1]
+		Jump D[Libre]
+	
+	
+%-------------------------------------
+%obtenerEstadoC
+%-------------------------------------
+obtenerEstadoC
+
+	%-------------------------------------
+	%RA super.obtenerEstado (CLASE A)
+	%-------------------------------------
+	SetLibre Libre + 1                          %lugar para retorno
+	SetD Libre, PC + 6                          @PR a obtenerEstadoC
+	SetD Libre + 1, Actual                      @ED a obtenerEstadoC
+	SetD Libre + 2, D[Actual + 2]               @This_C
+	SetActual Libre
+	SetLibre Libre + 3
+    	Jump D[D[H[D[Actual + 2] + 0] + 3] + 1]     %thisc -> vtc -> vtA -> obtenerEstadoA
+	
+	
+	%-------------------------------------
+	%RA calcularConForB
+	%-------------------------------------
+	SetLibre Libre + 1                              %Uso otra direc para el retorno de calcularconFor
+	SetD Libre, PC + 7                              @PR a obtenerEstadoC
+	SetD Libre + 1, Actual                          @ED a obtenerEstadoC
+	SetD Libre + 2, H[D[Actual + 2] + 2]            @This_B (por dependencia)
+	SetD Libre + 3, 10                              @p_repeticiones
+	SetActual Libre
+	SetLibre Libre + 6                              %pr + ed + this + repeticiones + total + j
+	Jump D[H[D[Actual + 2] + 0] + 3]                %thisC -> refB -> vtB -> calcularconforB
+
+	SetD Actual - 1, D[Libre - 2] + D[Libre - 1]    @ ret obtenerEstado + calcularConFor
+	
+	SetLibre Actual
+	SetActual D[Libre + 1]
+	Jump D[Libre]
+	
+	
