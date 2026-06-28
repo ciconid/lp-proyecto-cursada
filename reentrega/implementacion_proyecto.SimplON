@@ -152,7 +152,7 @@ calcularA
 
 		incrementarVariableControl
 			SetD Actual + 5, D[Actual + 5] + 1
-		Jump PC - 6
+		Jump PC - 6										%no utiliza etiqueta "inicioWhile" por colision con "calcularA"
 
 	fueraDelWhile
 		SetD Actual - 1, D[Actual + 4]                                          		@ret resultado
@@ -291,12 +291,11 @@ constructorC
 	SetLibre Libre + 4
 	jump constructorB
 
-	%-------------------------------------
-	%Retorno hacia la unidad llamadora
-	%-------------------------------------
+
 	SetLibre Actual
 	SetActual D[Libre + 1]
 	Jump D[Libre]
+
 %-------------------------------------
 %procesarComplejoC
 %-------------------------------------
