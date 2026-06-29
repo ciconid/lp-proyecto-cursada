@@ -37,7 +37,7 @@
 	SetLibre Libre + 4
 
 %-------------------------------------
-%RA de MAIN
+%RA de MAIN - Codigo de Inicializacion
 %-------------------------------------
 
 %Decision: omitimos PR y ED a main
@@ -104,7 +104,7 @@ main
 
 	
 	SetD Actual + 4, D[Libre - 1]
-	SetOut D[Actual + 4]				    %muestra output resultado1
+	SetOut D[Actual + 4]				                %muestra output resultado1
 	
 	halt					           
 
